@@ -27,7 +27,8 @@ async def clear_videos():
 async def home(): return "Hello world!"
 
 @app.post("/analysis")
-async def analysis_request(video_info: VideoInfo) -> str: # for now string; later proper object with car flow
+async def analysis_request(video_info: VideoInfo) -> str: # for now string; later proper object with car flowreturn
+    return "aaas"
     response = requests.get(SERVER + VIDEOS + video_info.id, stream=True)
     response.raise_for_status()
     
