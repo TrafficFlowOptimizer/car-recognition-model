@@ -164,3 +164,6 @@ migrations/
 .mp4
 
 .weights
+output
+.idea
+yolo/yolov3.weights
