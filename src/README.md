@@ -39,7 +39,8 @@ The second one uses pretrained `.weights` file from [this site](https://pjreddie
 - Download any test-video with cars driving around and put it to `videos/` folder (or use any of those that are already there)
 - Move `.weights` file to `yolo/` folder
 - Go to the project's repository via command line
-- type `python car_counter_yolov3_COCO_6_classes.py -y yolo --input videos/THE_NAME_OF_YOUR_TEST_VIDEO --output output --skip-frames 5` and hit `Enter`
+- Go to src folder
+- type `python car_counter_yolov3_COCO_6_classes.py -y yolo --input videos/asia.mp4 --output output --skip-frames 5` and hit `Enter`
 
   You can change the `skip-frames` parameter (the higher it is, the faster the program works). But the accuracy will be lower
 

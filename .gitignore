@@ -20,7 +20,7 @@ C:\CREESTL\Programming\PythonCoding\semestr_4\CarWash\.idea\misc.xml
 # Reference: https://intellij-support.jetbrains.com/hc/en-us/articles/206544839
 
 # User-specific stuff:
-.idea/workspace.xml
+src/.idea/workspace.xml
 .idea/tasks.xml
 .idea/dictionaries
 .idea/vcs.xml
@@ -166,4 +166,4 @@ migrations/
 .weights
 output
 .idea
-yolo/yolov3.weights
+src/yolo/yolov3.weights

@@ -198,7 +198,7 @@ while True:
         for file in os.listdir(args["output"]):
             os.remove(os.getcwd() + "/output/" + file)
             output_count = 1
-    if "{}_proccesed.avi".format(output_count) not in os.listdir(args["output"]):
+    if "{}_proccesed.avi".format(output_count) not in os.listdir("../" + args["output"]):
         writer_path = args["output"] + "/{}_proccesed.avi".format(output_count)
         break
     else:
@@ -511,7 +511,7 @@ while True:
 plt.show()
 
 # записываю все полученные данные в json файл
-with open(args["output"] + "/" + "analysis_results_{}.json".format(output_count), 'w') as f:
+with open("../" + args["output"] + "/" + "analysis_results_{}.json".format(output_count), 'w') as f:
     json.dump(data, f)
 
 print("\nThe results are:")
