@@ -48,10 +48,10 @@ async def analysis_request(video_info: VideoInfo) -> str: # for now string; late
 
     print("Video {} successfully saved".format(video_info.id))
     
-    analysis_process = Popen(["python", "car_counter_yolov3_COCO_6_classes.py", "-y", "yolo", "--input", "videos/asia.mp4", "--output", "output", "--skip-frames", "5"])
-    res = analysis_process.communicate()[0]
-    print(res)
-    print(analysis_process.returncode == 0)
+    # analysis_process = Popen(["python", "car_counter_yolov3_COCO_6_classes.py", "-y", "yolo", "--input", "videos/asia.mp4", "--output", "output", "--skip-frames", "5"])
+    # res = analysis_process.communicate()[0]
+    # print(res)
+    # print(analysis_process.returncode == 0)
     
     await delete_video(file_name)
     

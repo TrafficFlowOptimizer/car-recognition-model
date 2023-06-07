@@ -1,4 +1,5 @@
 '''
+<<<<<<< HEAD
 Программа распознает 6 типов автомобилей на видео, производит подсчет каждого из них, а также
 подсчет общего числа атомобилей на данной кадре и заносит все резльтаты в .json файл
 '''
@@ -198,6 +199,7 @@ while True:
         for file in os.listdir(args["output"]):
             os.remove(os.getcwd() + "/output/" + file)
             output_count = 1
+
     if "{}_proccesed.avi".format(output_count) not in os.listdir("../" + args["output"]):
         writer_path = args["output"] + "/{}_proccesed.avi".format(output_count)
         break
@@ -511,6 +513,7 @@ while True:
 plt.show()
 
 # записываю все полученные данные в json файл
+
 with open("../" + args["output"] + "/" + "analysis_results_{}.json".format(output_count), 'w') as f:
     json.dump(data, f)
 
