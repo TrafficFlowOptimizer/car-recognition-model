@@ -1,7 +1,9 @@
 from fastapi import FastAPI
+import uvicorn
 import requests
 from uuid import uuid4
 import os
+from sys import argv
 import glob
 from time import sleep
 
@@ -13,8 +15,11 @@ app = FastAPI()
 
 VIDEOS_DIRECTORY = "../vids"
 
-SERVER = "http://host.docker.internal:8080/"
-
+if len(argv) == 1:
+    SERVER = "http://localhost:8080/"
+else: #Server.py runs on docker
+    SERVER = "http://host.docker.internal:8080/"
+    
 VIDEOS = "videos/"
 OPTIMIZATIONS = "optimization/"
 
@@ -48,3 +53,6 @@ async def analysis_request(video_info: VideoInfo) -> str: # for now string; late
     await delete_video(file_name)
     
     return "in the future car flow here"
+
+if __name__ == "__main__":
+    uvicorn.run("Server:app", port=8081, host="0.0.0.0", reload=True)
