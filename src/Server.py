@@ -53,7 +53,7 @@ async def analysis_request(video_info: VideoInfo) -> str: # for now string; late
     # print(res)
     # print(analysis_process.returncode == 0)
     
-    # await delete_video(file_name)
+    await delete_video(file_name)
     
     return "in the future car flow here"
 
