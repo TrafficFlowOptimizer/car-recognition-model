@@ -41,10 +41,6 @@ async def analysis_request(video_info: VideoInfo) -> str: # for now string; late
     
     print("Starting download: {}".format(file_name))
     
-    print(os.getcwd())
-    print(file_name)
-    
-    
     with open(file_name, "wb") as video_file:
         for chunk in response.iter_content(chunk_size=4096):
             if chunk:
