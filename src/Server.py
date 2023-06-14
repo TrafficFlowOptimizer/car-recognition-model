@@ -14,12 +14,12 @@ from VideoInfo import VideoInfo
 
 app = FastAPI()
 
-VIDEOS_DIRECTORY = "/vids"
-
 if len(argv) == 1:
     SERVER = "http://localhost:8080/"
+    VIDEOS_DIRECTORY = "vids"
 else: #Server.py runs on docker
     SERVER = "http://host.docker.internal:8080/"
+    VIDEOS_DIRECTORY = "../vids"
     
 VIDEOS = "videos/"
 OPTIMIZATIONS = "optimization/"
@@ -40,6 +40,10 @@ async def analysis_request(video_info: VideoInfo) -> str: # for now string; late
     file_name = VIDEOS_DIRECTORY + "/vid" + video_info.id + "_" + str(uuid4()) + "." + video_info.extension
     
     print("Starting download: {}".format(file_name))
+    
+    print(os.getcwd())
+    print(file_name)
+    
     
     with open(file_name, "wb") as video_file:
         for chunk in response.iter_content(chunk_size=4096):
