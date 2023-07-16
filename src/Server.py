@@ -14,12 +14,12 @@ from VideoInfo import VideoInfo
 
 app = FastAPI()
 
-VIDEOS_DIRECTORY = "../vids"
-
 if len(argv) == 1:
     SERVER = "http://localhost:8080/"
+    VIDEOS_DIRECTORY = "vids"
 else: #Server.py runs on docker
     SERVER = "http://host.docker.internal:8080/"
+    VIDEOS_DIRECTORY = "../vids"
     
 VIDEOS = "videos/"
 OPTIMIZATIONS = "optimization/"
