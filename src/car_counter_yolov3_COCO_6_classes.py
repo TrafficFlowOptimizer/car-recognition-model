@@ -331,7 +331,7 @@ while True:
         outs = net.forward(output_layers)
 
         # анализируем список боксов
-        for out in outs:
+        for out in outs[1:3]:
             for detection in out:
                 scores = detection[5:]
                 class_id = np.argmax(scores)
@@ -357,7 +357,6 @@ while True:
                     y2 = y1 + h
 
                     if not is_overlapping(car_rectangles, (x1, y1, x2, y2)):
-                        print("overlaping")
                         car_rectangles.append((x1, y1, x2, y2))
 
                         # возьмем максимальный радиус для CentroidTracker пропорционально размеру машины

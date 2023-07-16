@@ -45,7 +45,7 @@ net = cv2.dnn.readNet(args["yolo"] + "/yolo-obj_9000.weights", args["yolo"] + "/
 print("[INFO] path to weights: ", args["yolo"] + "/yolo-obj_9000.weights")
 print("[INFO] path to cfg: ", args["yolo"] + "/yolo-obj.cfg")
 layer_names = net.getLayerNames()
-output_layers = [layer_names[i[0] - 1] for i in net.getUnconnectedOutLayers()]
+output_layers = [layer_names[i - 1] for i in net.getUnconnectedOutLayers()]
 
 
 # путь к исходному видео
@@ -59,7 +59,7 @@ vs = cv2.VideoCapture(args["input"])
 writer = None
 i = 1
 while True:
-	if "{}_proccesed.avi".format(i) not in os.listdir(args["output"]):
+	if "{}_proccesed.avi".format(i) not in os.listdir("../" + args["output"]):
 		writer_path = args["output"] + "/{}_proccesed.avi".format(i)
 		break
 	else:

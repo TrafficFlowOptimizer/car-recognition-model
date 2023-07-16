@@ -170,4 +170,4 @@ migrations/
 .weights
 output
 .idea
-src/yolo/yolov3.weights
+src/yolo/*.weights

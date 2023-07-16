@@ -53,7 +53,7 @@ print("[INFO] path to weights: ", args["yolo"] + "/yolov3_608.weights")
 print("[INFO] path to cfg: ", args["yolo"] + "/yolov3_608.cfg")
 '''
 layer_names = net.getLayerNames()
-output_layers = [layer_names[i[0] - 1] for i in net.getUnconnectedOutLayers()]
+output_layers = [layer_names[i - 1] for i in net.getUnconnectedOutLayers()]
 # Размеры входного изображения
 inpWidth = 608
 inpHeight = 608
@@ -69,7 +69,7 @@ vs = cv2.VideoCapture(args["input"])
 writer = None
 i = 1
 while True:
-	if "{}_proccesed.avi".format(i) not in os.listdir(args["output"]):
+	if "{}_proccesed.avi".format(i) not in os.listdir("../" + args["output"]):
 		writer_path = args["output"] + "/{}_proccesed.avi".format(i)
 		break
 	else:
