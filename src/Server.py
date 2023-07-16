@@ -1,3 +1,4 @@
+import json
 import subprocess
 
 from fastapi import FastAPI
@@ -46,16 +47,20 @@ def analysis_request(video_info: VideoInfo) -> str: # for now string; later prop
 
     print("Video {} successfully saved".format(video_info.id))
     
-    analysis_process = Popen(["python", "car_counter_yolov3_COCO_6_classes.py", "-y", "yolo", "--input", "videos/asia.mp4", "--output", "output", "--skip-frames", "5"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    analysis_process.communicate()
+    analysis_process = Popen(["python", "car_counter_yolov3_COCO_6_classes.py", "-y", "yolo", "--input", "videos/pexels_cars.mp4", "--output", "output", "--skip-frames", "5"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    stdout, stderr = analysis_process.communicate()
+
+    stdout = stdout.decode('utf-8')
+
+    print('Standard Output:')
+    print(stdout)
 
     # res = analysis_process.communicate()[0]
     # print(res)
     # print(analysis_process.returncode == 0)
     
     # await delete_video(file_name)
-    
-    return "in the future car flow here"
+    return stdout
 
 if __name__ == "__main__":
     uvicorn.run("Server:app", port=8081, host="0.0.0.0", reload=True)
