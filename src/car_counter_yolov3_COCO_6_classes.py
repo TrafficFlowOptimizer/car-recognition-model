@@ -266,6 +266,15 @@ if __name__ == "__main__":
     # инициализируем нулями
     count_cars, count_persons, count_trucks, count_buses, count_bikes, count_bicycles = 0, 0, 0, 0, 0, 0
 
+    data = {
+        "cars": str(count_cars),
+        "people": str(count_persons),
+        "trucks": str(count_trucks),
+        "buses:": str(count_buses),
+        "motorcycles:": str(count_bikes),
+        "bycicles": str(count_bicycles),
+    }
+
     # проходим через каждый кадр видео
     while True:
         frame_number += 1
@@ -334,57 +343,57 @@ if __name__ == "__main__":
             outs = net.forward(output_layers)
 
             # анализируем список боксов
-            for out in outs[1:3]:
-                for detection in out:
-                    scores = detection[5:]
-                    class_id = np.argmax(scores)
 
-                    if class_id == 0:  # если обнаружена "background" - пропускаем
-                        pass
+            for detection in outs[1]:
+                scores = detection[5:]
+                class_id = np.argmax(scores)
 
-                    confidence = scores[class_id]
-                    # получаем ID наиболее "вероятных" объектов
-                    if confidence > args["confidence"]:
-                        # находятся координаты центроида бокса
-                        center_x = int(detection[0] * width)
-                        center_y = int(detection[1] * height)
-                        # это ИМЕННО ШИРИНА - то есть расстояние от левого края до правого
-                        w = int(detection[2] * width)
-                        # это ИМЕННО ВЫСОТА - то есть расстояние от верхнего края до нижнего
-                        h = int(detection[3] * height)
+                if class_id == 0:  # если обнаружена "background" - пропускаем
+                    pass
 
-                        # Координаты бокса (2 точки углов)
-                        x1 = int(center_x - w / 2)
-                        y1 = int(center_y - h / 2)
-                        x2 = x1 + w
-                        y2 = y1 + h
+                confidence = scores[class_id]
+                # получаем ID наиболее "вероятных" объектов
+                if confidence > args["confidence"]:
+                    # находятся координаты центроида бокса
+                    center_x = int(detection[0] * width)
+                    center_y = int(detection[1] * height)
+                    # это ИМЕННО ШИРИНА - то есть расстояние от левого края до правого
+                    w = int(detection[2] * width)
+                    # это ИМЕННО ВЫСОТА - то есть расстояние от верхнего края до нижнего
+                    h = int(detection[3] * height)
 
-                        if not is_overlapping(car_rectangles, (x1, y1, x2, y2)):
-                            car_rectangles.append((x1, y1, x2, y2))
+                    # Координаты бокса (2 точки углов)
+                    x1 = int(center_x - w / 2)
+                    y1 = int(center_y - h / 2)
+                    x2 = x1 + w
+                    y2 = y1 + h
 
-                            # возьмем максимальный радиус для CentroidTracker пропорционально размеру машины
-                            person_ct.maxDistance = w
-                            bike_ct.maxDistance = w
-                            bicycle_ct.maxDistance = w
-                            bus_ct.maxDistance = w
-                            truck_ct.maxDistance = w
-                            car_ct.maxDistance = w
+                    if not is_overlapping(car_rectangles, (x1, y1, x2, y2)):
+                        car_rectangles.append((x1, y1, x2, y2))
 
-                            count += 1
+                        # возьмем максимальный радиус для CentroidTracker пропорционально размеру машины
+                        person_ct.maxDistance = w
+                        bike_ct.maxDistance = w
+                        bicycle_ct.maxDistance = w
+                        bus_ct.maxDistance = w
+                        truck_ct.maxDistance = w
+                        car_ct.maxDistance = w
 
-                            # рисую бокс для теста
-                            cv2.rectangle(frame, (x1, y1), (x2, y2), (255, 255, 0), 1)
-                            cv2.putText(frame, CLASSES[class_id], (x1, y1 - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+                        count += 1
 
-                            # создаем трекер ДЛЯ КАЖДОЙ МАШИНЫ
-                            tracker = dlib.correlation_tracker()
-                            # создаем прямоугольник из бокса (фактически, это и есть бокс)
-                            rect = dlib.rectangle(x1, y1, x2, y2)
-                            # трекер начинает отслеживание КАЖДОГО БОКСА
-                            tracker.start_track(rgb, rect)
-                            # и каждый трекер помещается в общий массив
-                            trackers.append(tracker)
-                            class_ids.append(class_id)
+                        # рисую бокс для теста
+                        cv2.rectangle(frame, (x1, y1), (x2, y2), (255, 255, 0), 1)
+                        cv2.putText(frame, CLASSES[class_id], (x1, y1 - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+
+                        # создаем трекер ДЛЯ КАЖДОЙ МАШИНЫ
+                        tracker = dlib.correlation_tracker()
+                        # создаем прямоугольник из бокса (фактически, это и есть бокс)
+                        rect = dlib.rectangle(x1, y1, x2, y2)
+                        # трекер начинает отслеживание КАЖДОГО БОКСА
+                        tracker.start_track(rgb, rect)
+                        # и каждый трекер помещается в общий массив
+                        trackers.append(tracker)
+                        class_ids.append(class_id)
 
 
 
