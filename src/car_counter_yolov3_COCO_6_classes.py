@@ -457,6 +457,6 @@ if __name__ == "__main__":
     # закрываем все окна
     cv2.destroyAllWindows()
 
-    info = [("cars in line {}: ".format(i + 1), len(detection_rectangles_dict[i].detected_car_ids)) for i in range(len(detection_rectangles))] +\
-           [("buses in line {}: ".format(i + 1), len(detection_rectangles_dict[i].detected_bus_ids)) for i in range(len(detection_rectangles))]
+    info = [{"cars in line {} :".format(i + 1), len(detection_rectangles_dict[i].detected_car_ids)} for i in range(len(detection_rectangles))] +\
+           [{"buses in line {} :".format(i + 1), len(detection_rectangles_dict[i].detected_bus_ids)} for i in range(len(detection_rectangles))]
     print(info)
