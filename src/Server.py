@@ -9,7 +9,7 @@ from sys import argv
 import glob
 from subprocess import Popen
 
-from VideoInfo import VideoInfo
+from AnalysisRequest import AnalysisRequest
 
 app = FastAPI()
 
@@ -32,11 +32,11 @@ async def clear_videos():
 def home(): return "Hello world!"
 
 @app.post("/analysis")
-def analysis_request(video_info: VideoInfo) -> str: # for now string; later proper object with car flow return
+def analysis_request(analysis_request: AnalysisRequest) -> str: # for now string; later proper object with car flow return
     # response = requests.get(SERVER + VIDEOS + video_info.id, stream=True)
     # response.raise_for_status()
     
-    file_name = VIDEOS_DIRECTORY + "/vid" + video_info.id + "_" + str(uuid4()) + "." + video_info.extension
+    file_name = VIDEOS_DIRECTORY + VIDEOS + analysis_request.id + "_" + str(uuid4()) + "." + analysis_request.extension
     
     print("Starting download: {}".format(file_name))
     
@@ -45,9 +45,12 @@ def analysis_request(video_info: VideoInfo) -> str: # for now string; later prop
     #         if chunk:
     #             video_file.write(chunk)
 
-    print("Video {} successfully saved".format(video_info.id))
+    print("Video {} successfully saved".format(analysis_request.id))
     
-    analysis_process = Popen(["python", "car_counter_yolov3_COCO_6_classes.py", "-y", "yolo", "--input", "videos/pexels_cars.mp4", "--output", "output", "--skip-frames", "5"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    analysis_process = Popen(["python", "car_counter_yolov3_COCO_6_classes.py", "-y", "yolo", "--input",
+                              VIDEOS + analysis_request.id + '.' + analysis_request.extension, "--output",
+                              "output", "--skip-frames", analysis_request.skip_frames, "--detection_rectangles",
+                              analysis_request.detection_rectangles], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     stdout, stderr = analysis_process.communicate()
 
     stdout = stdout.decode('utf-8')
@@ -58,7 +61,7 @@ def analysis_request(video_info: VideoInfo) -> str: # for now string; later prop
     # res = analysis_process.communicate()[0]
     # print(res)
     # print(analysis_process.returncode == 0)
-    
+
     # await delete_video(file_name)
     return stdout
 

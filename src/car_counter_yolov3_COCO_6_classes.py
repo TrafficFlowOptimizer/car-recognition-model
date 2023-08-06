@@ -3,6 +3,7 @@
 Программа распознает 6 типов автомобилей на видео, производит подсчет каждого из них, а также
 подсчет общего числа атомобилей на данной кадре и заносит все резльтаты в .json файл
 '''
+from typing import OrderedDict
 
 # RUN THE CODE:
 # python car_counter_yolov3_6_classes.py -y yolo --input videos/traffic.mp4 --output output --skip-frames 5
@@ -19,117 +20,41 @@ import cv2
 import os
 from matplotlib import pyplot as plt
 
+from DetectionRectangle import DetectionRectangle
+from VehicleType import VehicleType
+
 # парсер аргументов с командной строки
 
+def draw_detection_areas(detection_frame, detection_areas: list[DetectionRectangle]):
+    for detection_area in detection_areas:
+        cv2.rectangle(detection_frame, (detection_area.detection_lower_left[0], detection_area.detection_lower_left[1]),
+                      (detection_area.detection_upper_right[0], detection_area.detection_upper_right[1]), (0, 0, 255), 4)
 
 
 def is_overlapping(rectangles, new_rectangle):
     for rectangle in rectangles:
-        if not ((rectangle[0] >= new_rectangle[2]) or (rectangle[2] <= new_rectangle[0])\
+        if not ((rectangle[0] >= new_rectangle[2]) or (rectangle[2] <= new_rectangle[0])
                 or (rectangle[3] <= new_rectangle[1]) or (rectangle[1] >= new_rectangle[3])):
             return True
     return False
 
 
+def is_point_inside_rectangle(point, rectangle):
+    return rectangle[0] < point[0] < rectangle[2] and rectangle[1] < point[1] < rectangle[3]
+
+
 # Функция считает общее количество объектов класса, появившихся на видео
-def count_objects(objects, object_class, total, temp):
-    global total_cars
-    global temp_cars
-    global total_persons
-    global temp_persons
-    global total_trucks
-    global temp_trucks
-    global total_buses
-    global temp_buses
-    global total_bikes
-    global temp_bikes
-    global total_bicycles
-    global temp_bicycles
-
-    if object_class == "car":
-        total, temp = total_cars, temp_cars
-        length = len(objects.keys())
-        if length > total:
-            total += length - total
-        if temp is not None:
-            if (length > temp):
-                total += length - temp
-        if length < total:
-            temp = length
-        # переприсваиваем глобальную переменную
-        total_cars = total
-        temp_cars = temp
-
-    elif object_class == "person":
-        total, temp = total_persons, temp_persons
-        length = len(objects.keys())
-        if length > total:
-            total += length - total
-        if temp is not None:
-            if (length > temp):
-                total += length - temp
-        if length < total:
-            temp = length
-        # переприсваиваем глобальную переменную
-        total_persons = total
-        temp_persons = temp
-
-    elif object_class == "truck":
-        total, temp = total_trucks, temp_trucks
-        length = len(objects.keys())
-        if length > total:
-            total += length - total
-        if temp is not None:
-            if (length > temp):
-                total += length - temp
-        if length < total:
-            temp = length
-        # переприсваиваем глобальную переменную
-        total_trucks = total
-        temp_trucks = temp
-    elif object_class == "bus":
-
-        total, temp = total_buses, temp_buses
-        length = len(objects.keys())
-        if length > total:
-            total += length - total
-        if temp is not None:
-            if (length > temp):
-                total += length - temp
-        if length < total:
-            temp = length
-        # переприсваиваем глобальную переменную
-        total_buses = total
-        temp_buses = temp
-    elif object_class == "bike":
-        total, temp = total_bikes, temp_bikes
-        length = len(objects.keys())
-        if length > total:
-            total += length - total
-        if temp is not None:
-            if (length > temp):
-                total += length - temp
-        if length < total:
-            temp = length
-        # переприсваиваем глобальную переменную
-        total_bikes = total
-        temp_bikes = temp
-    elif object_class == "bicycle":
-        total, temp = total_bicycles, temp_bicycles
-        length = len(objects.keys())
-        if length > total:
-            total += length - total
-        if temp is not None:
-            if (length > temp):
-                total += length - temp
-        if length < total:
-            temp = length
-        # переприсваиваем глобальную переменную
-        total_bicycles = total
-        temp_bicycles = temp
-
-    # возвращаем количество авто одного типа
-    return total
+def count_objects(vehicles: OrderedDict, detection_rectangles: list[DetectionRectangle], vehicle_type: VehicleType):
+    for vehicle_id, vehicle_centroid in vehicles.items():
+        for detection_rectangle in detection_rectangles:
+            if is_point_inside_rectangle(vehicle_centroid,
+                                         detection_rectangle.detection_lower_left + detection_rectangle.detection_upper_right):
+                if vehicle_type == VehicleType.CAR:
+                    detection_rectangle.detected_car_ids.add(vehicle_id)
+                elif vehicle_type == VehicleType.BUS:
+                    detection_rectangle.detected_bus_ids.add(vehicle_id)
+                else:
+                    raise Exception("unsupported vehicle type")
 
 
 # Функция рисует ID-шники и центроиды объектов
@@ -154,8 +79,9 @@ def draw_centroids(frame, objects, trackableObjects):
                     cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
         cv2.circle(frame, (centroid[0], centroid[1]), 4, (0, 255, 0), -1)
 
+        cv2.circle(frame, (10, 10), 4, (0, 255, 0), -1)
 
-if __name__ == "__main__":
+def parse_args() -> tuple[str, str, str, str, str, list[DetectionRectangle]]:
     ap = argparse.ArgumentParser()
     ap.add_argument("-y", "--yolo", required=True, type=str,
                     help="path to yolo directory")
@@ -168,16 +94,34 @@ if __name__ == "__main__":
     ap.add_argument("-s", "--skip-frames", type=int, default=10,
                     help="number of frames to skip between detections"
                          "the higher the number the faster the program works")
+    ap.add_argument("-d", "--detection_rectangles", type=str)
+
     args = vars(ap.parse_args())
 
-    # Настройка yolov3 СТОК
-    # print("[INFO] loading model...")
+    detection_rectangles_parsed_json = json.loads(args["detection_rectangles"])
+    detection_rectangles = []
+    for detection_rectangle in detection_rectangles_parsed_json:
+        detection_rectangles.append(DetectionRectangle(detection_rectangle["id"], detection_rectangle["lower_left"],
+                                                       detection_rectangle["upper_right"]))
 
-    net = cv2.dnn.readNet(args["yolo"] + "/yolov3.weights", args["yolo"] + "/yolov3_608.cfg")
-    # print("[INFO] path to weights: ", args["yolo"] + "/yolov3_608.weights")
-    # print("[INFO] path to cfg: ", args["yolo"] + "/yolov3_608.cfg")
+    return args["yolo"], args["input"], args["output"], args["skip_frames"], args["confidence"], detection_rectangles
+
+
+def create_detections_rectangle_dict(detection_rectangles: list[DetectionRectangle]) -> dict[int, DetectionRectangle]:
+    detection_rectangles_dict = {}
+    for detection_rectangle in detection_rectangles:
+        detection_rectangles_dict[detection_rectangle.rectangle_id] = detection_rectangle
+    return detection_rectangles_dict
+
+
+if __name__ == "__main__":
+
+    yolo, net_input, output, skip_frames, confidence_lower_bound, detection_rectangles = parse_args()
+    detection_rectangles_dict = create_detections_rectangle_dict(detection_rectangles)
+
+    net = cv2.dnn.readNet(yolo + "/yolov3.weights", yolo + "/yolov3_608.cfg")
     # классы объектов, которые могут быть распознаны алгоритмом
-    with open(args["yolo"] + "/yolov3_608.names", 'r') as f:
+    with open(yolo + "/yolov3_608.names", 'r') as f:
         CLASSES = [line.strip() for line in f.readlines()]
 
     layer_names = net.getLayerNames()
@@ -186,12 +130,7 @@ if __name__ == "__main__":
     inpWidth = 608
     inpHeight = 608
 
-    # путь к исходному видео
-    # print("[INFO] input directory: ", args["input"])
-
-    # читаем видео с диска
-    # print("[INFO] opening video file...")
-    vs = cv2.VideoCapture(args["input"])
+    vs = cv2.VideoCapture(net_input)
 
     # объявляем инструмент для записи конечного видео в файл, указываем путь
     writer = None
@@ -199,16 +138,15 @@ if __name__ == "__main__":
     while True:
         # если в директории вывода уже больше 20 файлов, то она очищается
         if output_count > 20:
-            for file in os.listdir(args["output"]):
+            for file in os.listdir(output):
                 os.remove(os.getcwd() + "/output/" + file)
                 output_count = 1
 
-        if "{}_proccesed.avi".format(output_count) not in os.listdir("../" + args["output"]):
-            writer_path = args["output"] + "/{}_proccesed.avi".format(output_count)
+        if "{}_proccesed.avi".format(output_count) not in os.listdir("../" + output):
+            writer_path = output + "/{}_proccesed.avi".format(output_count)
             break
         else:
             output_count += 1
-    # print("[INFO] output directory: ", writer_path)
 
     # инициализируем размеры кадра как пустые значения
     # они будут переназначены при анализе первого кадра и только
@@ -238,11 +176,12 @@ if __name__ == "__main__":
     trackers = []
     # список объектов для трекинга
     car_trackableObjects = {}
-    person_trackableObjects = {}
-    truck_trackableObjects = {}
     bus_trackableObjects = {}
-    bike_trackableObjects = {}
-    bicycle_trackableObjects = {}
+
+    # person_trackableObjects = {}
+    # truck_trackableObjects = {}
+    # bike_trackableObjects = {}
+    # bicycle_trackableObjects = {}
 
     # глобальные переменные для счетчиков
     total_cars, temp_cars = 0, None
@@ -283,14 +222,12 @@ if __name__ == "__main__":
 
         # если кадр является пустым значением, значит был достигнут конец видео
         if frame is None:
-            # print("=============================================")
-            # print("The end of the video reached")
-            # print("Total number of cars on the video is ", total)
-            # print("=============================================")
             break
 
         # изменим размер кадра для ускорения работы
         frame = imutils.resize(frame, width=800)
+
+        draw_detection_areas(frame, detection_rectangles)
 
         # для работы библиотеки dlib необходимо изменить цвета на RGB вместо BGR
         rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
@@ -324,7 +261,7 @@ if __name__ == "__main__":
         # каждые N кадров (указанных в аргументе "skip_frames" производится ДЕТЕКТРОВАНИЕ машин
         # после этого идет ОТСЛЕЖИВАНИЕ их боксов
         # это увеличивает скорость работы программы
-        if totalFrames % args["skip_frames"] == 0:
+        if totalFrames % skip_frames == 0:
             # создаем пустой список трекеров
             trackers = []
             # список номером классов (нужен для подписи класса у боксов машин
@@ -343,57 +280,58 @@ if __name__ == "__main__":
             outs = net.forward(output_layers)
 
             # анализируем список боксов
+            for out in outs:
+                for detection in out:
+                    scores = detection[5:]
+                    class_id = np.argmax(scores)
 
-            for detection in outs[1]:
-                scores = detection[5:]
-                class_id = np.argmax(scores)
+                    if class_id == 0:  # если обнаружена "background" - пропускаем
+                        pass
 
-                if class_id == 0:  # если обнаружена "background" - пропускаем
-                    pass
+                    confidence = scores[class_id]
+                    # получаем ID наиболее "вероятных" объектов
+                    if confidence > confidence_lower_bound:
+                        # находятся координаты центроида бокса
+                        center_x = int(detection[0] * width)
+                        center_y = int(detection[1] * height)
+                        # это ИМЕННО ШИРИНА - то есть расстояние от левого края до правого
+                        w = int(detection[2] * width)
+                        # это ИМЕННО ВЫСОТА - то есть расстояние от верхнего края до нижнего
+                        h = int(detection[3] * height)
 
-                confidence = scores[class_id]
-                # получаем ID наиболее "вероятных" объектов
-                if confidence > args["confidence"]:
-                    # находятся координаты центроида бокса
-                    center_x = int(detection[0] * width)
-                    center_y = int(detection[1] * height)
-                    # это ИМЕННО ШИРИНА - то есть расстояние от левого края до правого
-                    w = int(detection[2] * width)
-                    # это ИМЕННО ВЫСОТА - то есть расстояние от верхнего края до нижнего
-                    h = int(detection[3] * height)
+                        # Координаты бокса (2 точки углов)
+                        x1 = int(center_x - w / 2)
+                        y1 = int(center_y - h / 2)
+                        x2 = x1 + w
+                        y2 = y1 + h
 
-                    # Координаты бокса (2 точки углов)
-                    x1 = int(center_x - w / 2)
-                    y1 = int(center_y - h / 2)
-                    x2 = x1 + w
-                    y2 = y1 + h
+                        if not is_overlapping(car_rectangles, (x1, y1, x2, y2)):
+                            car_rectangles.append((x1, y1, x2, y2))
 
-                    if not is_overlapping(car_rectangles, (x1, y1, x2, y2)):
-                        car_rectangles.append((x1, y1, x2, y2))
+                            # возьмем максимальный радиус для CentroidTracker пропорционально размеру машины
+                            person_ct.maxDistance = w
+                            bike_ct.maxDistance = w
+                            bicycle_ct.maxDistance = w
+                            bus_ct.maxDistance = w
+                            truck_ct.maxDistance = w
+                            car_ct.maxDistance = w
 
-                        # возьмем максимальный радиус для CentroidTracker пропорционально размеру машины
-                        person_ct.maxDistance = w
-                        bike_ct.maxDistance = w
-                        bicycle_ct.maxDistance = w
-                        bus_ct.maxDistance = w
-                        truck_ct.maxDistance = w
-                        car_ct.maxDistance = w
+                            count += 1
 
-                        count += 1
+                            # рисую бокс для теста
+                            cv2.rectangle(frame, (x1, y1), (x2, y2), (255, 255, 0), 1)
+                            cv2.putText(frame, CLASSES[class_id], (x1, y1 - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.5,
+                                        (0, 255, 0), 2)
 
-                        # рисую бокс для теста
-                        cv2.rectangle(frame, (x1, y1), (x2, y2), (255, 255, 0), 1)
-                        cv2.putText(frame, CLASSES[class_id], (x1, y1 - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
-
-                        # создаем трекер ДЛЯ КАЖДОЙ МАШИНЫ
-                        tracker = dlib.correlation_tracker()
-                        # создаем прямоугольник из бокса (фактически, это и есть бокс)
-                        rect = dlib.rectangle(x1, y1, x2, y2)
-                        # трекер начинает отслеживание КАЖДОГО БОКСА
-                        tracker.start_track(rgb, rect)
-                        # и каждый трекер помещается в общий массив
-                        trackers.append(tracker)
-                        class_ids.append(class_id)
+                            # создаем трекер ДЛЯ КАЖДОЙ МАШИНЫ
+                            tracker = dlib.correlation_tracker()
+                            # создаем прямоугольник из бокса (фактически, это и есть бокс)
+                            rect = dlib.rectangle(x1, y1, x2, y2)
+                            # трекер начинает отслеживание КАЖДОГО БОКСА
+                            tracker.start_track(rgb, rect)
+                            # и каждый трекер помещается в общий массив
+                            trackers.append(tracker)
+                            class_ids.append(class_id)
 
 
 
@@ -431,16 +369,17 @@ if __name__ == "__main__":
 
                 if obj_class == "car":
                     car_rects.append((x1, y1, x2, y2))
-                elif obj_class == "person":
-                    person_rects.append((x1, y1, x2, y2))
-                elif obj_class == "truck":
-                    truck_rects.append((x1, y1, x2, y2))
                 elif obj_class == "bus":
                     bus_rects.append((x1, y1, x2, y2))
-                elif obj_class == "motorcycle":
-                    bike_rects.append((x1, y1, x2, y2))
-                elif obj_class == "bicycle":
-                    bicycle_rects.append((x1, y1, x2, y2))
+
+                # elif obj_class == "person":
+                #     person_rects.append((x1, y1, x2, y2))
+                # elif obj_class == "truck":
+                #     truck_rects.append((x1, y1, x2, y2))
+                # elif obj_class == "motorcycle":
+                #     bike_rects.append((x1, y1, x2, y2))
+                # elif obj_class == "bicycle":
+                #     bicycle_rects.append((x1, y1, x2, y2))
 
         '''
         После детекта первой машины и до конца работы программы rects больше никогда не станут []. 
@@ -448,51 +387,39 @@ if __name__ == "__main__":
         rects так и будут НЕпустым массивом, но машина слишком надолго исчезнет из виду.
         '''
         cars = car_ct.update(car_rects)
-        persons = person_ct.update(person_rects)
-        trucks = truck_ct.update(truck_rects)
         buses = bus_ct.update(bus_rects)
-        bikes = bike_ct.update(bike_rects)
-        bicycles = bicycle_ct.update(bicycle_rects)
+
+        # persons = person_ct.update(person_rects)
+        # trucks = truck_ct.update(truck_rects)
+        # bikes = bike_ct.update(bike_rects)
+        # bicycles = bicycle_ct.update(bicycle_rects)
 
         if cars != {}:
-            count_cars = count_objects(cars, "car", total_cars, temp_cars)
-        if persons != {}:
-            count_persons = count_objects(persons, "person", total_persons, temp_persons)
-        if trucks != {}:
-            count_trucks = count_objects(trucks, "truck", total_trucks, temp_trucks)
+            count_objects(cars, detection_rectangles, VehicleType.CAR)
         if buses != {}:
-            count_buses = count_objects(buses, "bus", total_buses, temp_buses)
-        if bikes != {}:
-            count_bikes = count_objects(bikes, "bike", total_bikes, temp_bikes)
-        if bicycles != {}:
-            count_bicycles = count_objects(bicycles, "bicycle", total_bicycles, temp_bicycles)
-
-        draw_centroids(frame, cars, car_trackableObjects)
-        draw_centroids(frame, persons, person_trackableObjects)
-        draw_centroids(frame, trucks, truck_trackableObjects)
-        draw_centroids(frame, buses, bus_trackableObjects)
-        draw_centroids(frame, bikes, bike_trackableObjects)
-        draw_centroids(frame, bicycles, bicycle_trackableObjects)
+            count_objects(buses, detection_rectangles, VehicleType.BUS)
 
         # Данные для вывода на экран
         info = [
-            ("cars: ", count_cars),
-            ("people: ", count_persons),
-            ("trucks: ", count_trucks),
-            ("buses: ", count_buses),
-            ("bikes: ", count_bikes),
-            ("bicycles", count_bicycles),
-        ]
+            ("cars in line {}: ".format(i + 1), len(detection_rectangles_dict[i].detected_car_ids)) for i in range(len(detection_rectangles))
+        ] + [("buses in line {}: ".format(i + 1), len(detection_rectangles_dict[i].detected_bus_ids)) for i in range(len(detection_rectangles))]
 
         # данные для записи в JSON
         data = {
-            "cars": str(count_cars),
-            "people": str(count_persons),
-            "trucks": str(count_trucks),
-            "buses:": str(count_buses),
-            "motorcycles:": str(count_bikes),
-            "bycicles": str(count_bicycles),
+            "cars line 1": str(count_cars),
+            "cars line 2": str(count_persons),
+            "cars line 3": str(count_trucks),
+            "cars line 4:": str(count_buses),
+            "cars line 5:": str(count_bikes),
+            "buses line 1: ": str(count_cars),
+            "buses line 2: ": str(count_persons),
+            "buses line 3: ": str(count_trucks),
+            "buses line 4: ": str(count_buses),
+            "buses line 5: ": str(count_bikes),
         }
+
+        draw_centroids(frame, cars, car_trackableObjects)
+        draw_centroids(frame, buses, bus_trackableObjects)
 
         # изобразим информаци о количестве машин на краю кадра
         for (i, (object_class, total)) in enumerate(info):
@@ -500,7 +427,8 @@ if __name__ == "__main__":
             cv2.putText(frame, text, (10, height - ((i * 20) + 20)),
                         cv2.FONT_HERSHEY_COMPLEX, 0.6, (0, 255, 255), 1)
 
-        cv2.putText(frame, "Now: " + str(count), (width - 120, height - 10), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 0), 2)
+        cv2.putText(frame, "Now: " + str(count), (width - 120, height - 10), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 0),
+                    2)
 
         # записываем конечный кадр в указанную директорию
         if writer is not None:
@@ -512,7 +440,6 @@ if __name__ == "__main__":
 
         # для прекращения работы необходимо нажать клавишу "q"
         if key == ord("q"):
-            # print("[INFO] process finished by user")
             break
 
         # т.к. все выше-обработка одного кадра, то теперь необходимо увеличить количесвто кадров
@@ -524,12 +451,12 @@ if __name__ == "__main__":
 
     # записываю все полученные данные в json файл
 
-    with open("../" + args["output"] + "/" + "analysis_results_{}.json".format(output_count), 'w') as f:
+    with open("../" + output + "/" + "analysis_results_{}.json".format(output_count), 'w') as f:
         json.dump(data, f)
-
-    # print("\nThe results are:")
 
     # закрываем все окна
     cv2.destroyAllWindows()
 
-    print(data)
+    info = [("cars in line {}: ".format(i + 1), len(detection_rectangles_dict[i].detected_car_ids)) for i in range(len(detection_rectangles))] +\
+           [("buses in line {}: ".format(i + 1), len(detection_rectangles_dict[i].detected_bus_ids)) for i in range(len(detection_rectangles))]
+    print(info)
