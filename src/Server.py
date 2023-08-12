@@ -20,7 +20,7 @@ else:  # Server.py runs on docker
     SERVER = "http://host.docker.internal:8080/"
     VIDEOS_DIRECTORY = "../vids"
 
-load_dotenv("../env/.env")
+load_dotenv("../.env")
 VIDEOS = os.getenv('VIDEOS')
 OPTIMIZATIONS = os.getenv('OPTIMIZATIONS')
 PORT = int(os.getenv('PORT'))
