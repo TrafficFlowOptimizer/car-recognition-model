@@ -12,7 +12,6 @@ from typing import OrderedDict
 from pyimagesearch.centroidtracker import CentroidTracker
 from pyimagesearch.trackableobject import TrackableObject
 import numpy as np
-import argparse
 import imutils
 import dlib
 import json
@@ -35,6 +34,10 @@ class CarCounter:
         self.skip_frames = skip_frames
         self.detection_rectangles = detection_rectangles
         self.confidence_lower_bound = confidence_lower_bound
+        self.lower_relevance_margin = 100
+        self.upper_relevance_margin = 100
+        self.left_relevance_margin = 100
+        self.right_relevance_margin = 100
 
     def draw_detection_areas(self, detection_frame, detection_areas: list[DetectionRectangle]):
         for detection_area in detection_areas:
@@ -98,9 +101,44 @@ class CarCounter:
             detection_rectangles_dict[detection_rectangle.rectangle_id] = detection_rectangle
         return detection_rectangles_dict
 
-    def run(self):
+    def get_relevant_video_boundary(self):
+        if len(self.detection_rectangles) == 0:
+            raise Exception("CR should have at least one detection rectangle")
 
-        detection_rectangles_dict = self.create_detections_rectangle_dict(self.detection_rectangles)
+        lower_left_boundary_corner = [self.detection_rectangles[0].detection_lower_left[0],
+                                      self.detection_rectangles[0].detection_lower_left[1]]
+        upper_right_boundary_corner = [self.detection_rectangles[0].detection_upper_right[0],
+                                       self.detection_rectangles[0].detection_upper_right[1]]
+
+        for detection_rectangle in self.detection_rectangles:
+            lower_left_boundary_corner[0] = min(detection_rectangle.detection_lower_left[0],
+                                                lower_left_boundary_corner[0])
+            lower_left_boundary_corner[1] = min(detection_rectangle.detection_lower_left[1],
+                                                lower_left_boundary_corner[1])
+
+            upper_right_boundary_corner[0] = max(detection_rectangle.detection_upper_right[0],
+                                                 upper_right_boundary_corner[0])
+            upper_right_boundary_corner[1] = max(detection_rectangle.detection_upper_right[1],
+                                                 upper_right_boundary_corner[1])
+
+        lower_left_boundary_corner[0] = max(0, lower_left_boundary_corner[0] - self.lower_relevance_margin)
+        lower_left_boundary_corner[1] = max(0, lower_left_boundary_corner[1] - self.left_relevance_margin)
+
+        upper_right_boundary_corner[0] += self.upper_relevance_margin
+        upper_right_boundary_corner[1] += self.right_relevance_margin
+
+        return lower_left_boundary_corner, upper_right_boundary_corner
+
+    def shift_detection_rectangles(self, lower_left_corner: list[int, int]):
+        for detection_rectangle in self.detection_rectangles:
+            detection_rectangle.detection_lower_left[0] -= lower_left_corner[0]
+            detection_rectangle.detection_lower_left[1] -= lower_left_corner[1]
+
+            detection_rectangle.detection_upper_right[0] -= lower_left_corner[0]
+            detection_rectangle.detection_upper_right[1] -= lower_left_corner[1]
+
+
+    def run(self):
 
         net = cv2.dnn.readNet(self.yolo + "/yolov3.weights", self.yolo + "/yolov3_608.cfg")
         # классы объектов, которые могут быть распознаны алгоритмом
@@ -197,6 +235,11 @@ class CarCounter:
             "bycicles": str(count_bicycles),
         }
 
+        lower_left_corner, upper_right_corner = self.get_relevant_video_boundary()
+        self.shift_detection_rectangles(lower_left_corner)
+
+        detection_rectangles_dict = self.create_detections_rectangle_dict(self.detection_rectangles)
+
         # проходим через каждый кадр видео
         while True:
             frame_number += 1
@@ -208,7 +251,8 @@ class CarCounter:
                 break
 
             # изменим размер кадра для ускорения работы
-            frame = imutils.resize(frame, width=800)
+            frame = imutils.resize(frame)
+            frame = frame[lower_left_corner[1]: upper_right_corner[1], lower_left_corner[0]: upper_right_corner[0], :]
 
             self.draw_detection_areas(frame, self.detection_rectangles)
 
