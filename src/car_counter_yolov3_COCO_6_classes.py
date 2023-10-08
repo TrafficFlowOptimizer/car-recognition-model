@@ -22,6 +22,10 @@ from matplotlib import pyplot as plt
 from DetectionRectangle import DetectionRectangle
 from VehicleType import VehicleType
 
+from dotenv import load_dotenv
+
+load_dotenv()
+
 
 # парсер аргументов с командной строки
 class CarCounter:
@@ -137,7 +141,6 @@ class CarCounter:
             detection_rectangle.detection_upper_right[0] -= lower_left_corner[0]
             detection_rectangle.detection_upper_right[1] -= lower_left_corner[1]
 
-
     def run(self):
 
         net = cv2.dnn.readNet(self.yolo + "/yolov3.weights", self.yolo + "/yolov3_608.cfg")
@@ -151,7 +154,7 @@ class CarCounter:
         inpWidth = 608
         inpHeight = 608
 
-        vs = cv2.VideoCapture(self.net_input)
+        vs = cv2.VideoCapture(os.getenv('video_path') + self.net_input)
 
         # объявляем инструмент для записи конечного видео в файл, указываем путь
         writer = None

@@ -51,7 +51,7 @@ def analysis_request(
     # response = requests.get(SERVER + VIDEOS + video_info.id, stream=True)
     # response.raise_for_status()
 
-    file_name = VIDEOS_DIRECTORY + VIDEOS + analysis_request.id + "_" + str(uuid4()) + "." + analysis_request.extension
+    file_name = VIDEOS + analysis_request.id + "." + analysis_request.extension
 
     print("Starting download: {}".format(file_name))
 
