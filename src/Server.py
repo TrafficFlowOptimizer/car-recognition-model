@@ -13,6 +13,8 @@ from src.car_counter_yolov3_COCO_6_classes import CarCounter
 
 app = FastAPI()
 
+# SERVER = os.getenv('SPRING_HOST')
+
 if len(argv) == 1:
     SERVER = "http://localhost:8080/"
     VIDEOS_DIRECTORY = "vids"
