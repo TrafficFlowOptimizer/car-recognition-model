@@ -40,7 +40,6 @@ async def delete_video(name): os.remove(name)
 async def clear_videos():
     for f in glob.glob(VIDEOS_DIRECTORY): os.remove(f)
 
-
 @app.get("/")
 def home(): return "Hello world!"
 
@@ -64,7 +63,7 @@ def analysis_request(
 
     car_counter = CarCounter("yolo", VIDEOS + analysis_request.id + '.' + analysis_request.extension,
                              "output", int(analysis_request.skip_frames),
-                             parse_detection_rectangles(analysis_request.detection_rectangles))
+                             analysis_request.detection_rectangles, analysis_request.video)
 
     count_cars = car_counter.run()
 
