@@ -3,7 +3,7 @@ from Pair import Pair
 
 
 class DetectionRectangle(BaseModel):
-    connectionId: int
+    connectionId: str
     lowerLeft: Pair
     upperRight: Pair
     detected_car_ids = set()
