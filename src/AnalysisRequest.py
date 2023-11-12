@@ -8,4 +8,4 @@ class AnalysisRequest(BaseModel):
     extension: str
     skip_frames: str
     detection_rectangles: List[DetectionRectangle]
-    video: bytes
+    video: str

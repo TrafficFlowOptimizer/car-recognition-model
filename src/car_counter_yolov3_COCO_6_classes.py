@@ -4,7 +4,7 @@
 подсчет общего числа атомобилей на данной кадре и заносит все резльтаты в .json файл
 '''
 import base64
-from typing import OrderedDict, List
+from typing import OrderedDict
 
 # RUN THE CODE:
 # python car_counter_yolov3_6_classes.py -y yolo --input videos/traffic.mp4 --output output --skip-frames 5
@@ -109,8 +109,8 @@ class CarCounter:
     def create_detections_rectangle_dict(self, detection_rectangles: list[DetectionRectangle]) -> dict[
         int, DetectionRectangle]:
         detection_rectangles_dict = {}
-        for detection_rectangle in detection_rectangles:
-            detection_rectangles_dict[detection_rectangle.id] = detection_rectangle
+        for idx, detection_rectangle in enumerate(detection_rectangles):
+            detection_rectangles_dict[idx] = detection_rectangle
         return detection_rectangles_dict
 
     def get_relevant_video_boundary(self):
@@ -447,6 +447,7 @@ class CarCounter:
 
             # Данные для вывода на экран
             info = [
+
                        ("cars in line {}: ".format(i + 1), len(detection_rectangles_dict[i].detected_car_ids)) for i in
                        range(len(self.detection_rectangles))
                    ] + [("buses in line {}: ".format(i + 1), len(detection_rectangles_dict[i].detected_bus_ids)) for i
@@ -506,9 +507,10 @@ class CarCounter:
         # закрываем все окна
         cv2.destroyAllWindows()
 
-        info = dict([("cars in line {}".format(i + 1), len(detection_rectangles_dict[i].detected_car_ids)) for i in
-                     range(len(self.detection_rectangles))] + \
-                    [("buses in line {}".format(i + 1), len(detection_rectangles_dict[i].detected_bus_ids)) for i in
-                     range(len(self.detection_rectangles))])
+        info = []
+        for i in range(len(self.detection_rectangles)):
+            info.append(dict(id=i, detectedCars=len(detection_rectangles_dict[i].detected_car_ids),
+                             detectedBuses=len(detection_rectangles_dict[i].detected_bus_ids),
+                             connectionId=detection_rectangles_dict[i].connectionId))
 
         return str(info)
