@@ -113,9 +113,13 @@ class CarCounter:
             detection_rectangles_dict[idx] = detection_rectangle
         return detection_rectangles_dict
 
-    def get_relevant_video_boundary(self):
+    def get_relevant_video_boundary(self, frame):
         if len(self.detection_rectangles) == 0:
             raise Exception("CR should have at least one detection rectangle")
+
+        for detection_rectangle in self.detection_rectangles:
+            detection_rectangle.lowerLeft.second = frame.shape[0] - detection_rectangle.lowerLeft.second
+            detection_rectangle.upperRight.second = frame.shape[0] - detection_rectangle.upperRight.second
 
         lower_left_boundary_corner = [self.detection_rectangles[0].lowerLeft.first,
                                       self.detection_rectangles[0].lowerLeft.second]
@@ -254,7 +258,7 @@ class CarCounter:
             "bycicles": str(count_bicycles),
         }
 
-        lower_left_corner, upper_right_corner = self.get_relevant_video_boundary()
+        lower_left_corner, upper_right_corner = self.get_relevant_video_boundary(vs.read()[1])
         self.shift_detection_rectangles(lower_left_corner)
 
         detection_rectangles_dict = self.create_detections_rectangle_dict(self.detection_rectangles)
