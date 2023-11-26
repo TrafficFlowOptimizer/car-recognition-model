@@ -178,18 +178,18 @@ class CarCounter:
         # объявляем инструмент для записи конечного видео в файл, указываем путь
         writer = None
         output_count = 1
-        while True:
-            # если в директории вывода уже больше 20 файлов, то она очищается
-            if output_count > 20:
-                for file in os.listdir(self.output):
-                    os.remove(os.getcwd() + "/output/" + file)
-                    output_count = 1
-
-            if "{}_proccesed.avi".format(output_count) not in os.listdir("../" + self.output):
-                writer_path = self.output + "/{}_proccesed.avi".format(output_count)
-                break
-            else:
-                output_count += 1
+        # while True:
+        #     # если в директории вывода уже больше 20 файлов, то она очищается
+        #     if output_count > 20:
+        #         for file in os.listdir(self.output):
+        #             os.remove(os.getcwd() + "/output/" + file)
+        #             output_count = 1
+        #
+        #     if "{}_proccesed.avi".format(output_count) not in os.listdir("../" + self.output):
+        #         writer_path = self.output + "/{}_proccesed.avi".format(output_count)
+        #         break
+        #     else:
+        #         output_count += 1
 
         # инициализируем размеры кадра как пустые значения
         # они будут переназначены при анализе первого кадра и только
@@ -304,8 +304,8 @@ class CarCounter:
             # задаем путь записи конечного видео
             if writer is None:
                 fourcc = cv2.VideoWriter_fourcc(*"MJPG")
-                writer = cv2.VideoWriter(writer_path, fourcc, 30,
-                                         (width, height), True)
+                # writer = cv2.VideoWriter(writer_path, fourcc, 30,
+                #                          (width, height), True)
 
             # каждые N кадров (указанных в аргументе "skip_frames" производится ДЕТЕКТРОВАНИЕ машин
             # после этого идет ОТСЛЕЖИВАНИЕ их боксов
@@ -506,8 +506,8 @@ class CarCounter:
 
         # записываю все полученные данные в json файл
 
-        with open("../" + self.output + "/" + "analysis_results_{}.json".format(output_count), 'w') as f:
-            json.dump(data, f)
+        # with open("../" + self.output + "/" + "analysis_results_{}.json".format(output_count), 'w') as f:
+        #     json.dump(data, f)
 
         # закрываем все окна
         cv2.destroyAllWindows()

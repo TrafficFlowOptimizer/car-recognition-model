@@ -10,6 +10,7 @@ services:
       - SPRING_PORT=8080
       - DEBUG=False
       - CR_PORT=8081
+      - PASSWORD=1234
     networks:
       - tfo-net
     ports:
