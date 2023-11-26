@@ -1,10 +1,14 @@
 import json
+
 from dotenv import load_dotenv
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
+from fastapi import Request
 import uvicorn
 import os
 from sys import argv
 import glob
+
+from starlette.responses import JSONResponse
 
 from AnalysisRequest import AnalysisRequest
 from DetectionRectangle import DetectionRectangle
@@ -21,6 +25,9 @@ DEBUG = bool(os.getenv('DEBUG'))
 SERVER_HOST = os.getenv('SPRING_HOST')
 SERVER_PORT = os.getenv('SPRING_PORT')
 SERVER = "http://" + SERVER_HOST + ":" + SERVER_PORT + "/"
+
+PASSWORD = os.getenv('PASSWORD')
+PASSWORD_CODE = 'password'
 
 # CR setup
 VIDEOS_DIRECTORY = "videos/"
@@ -41,6 +48,19 @@ async def delete_video(name): os.remove(name)
 async def clear_videos():
     for f in glob.glob(VIDEOS_DIRECTORY): os.remove(f)
 
+
+async def check_password(request: Request):
+    if (request.query_params.get(PASSWORD_CODE) != PASSWORD):
+        raise HTTPException(status_code=403, detail="Forbidden: Source not allowed")
+
+@app.middleware("http")
+async def validate_source(request: Request, call_next):
+    try:
+        await check_password(request)
+    except HTTPException as e:
+        return JSONResponse(status_code=e.status_code, content={"error": e.detail})
+    response = await call_next(request)
+    return response
 
 @app.get("/")
 def home(): return "Hello world!"
