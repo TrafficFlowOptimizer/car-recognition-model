@@ -3,6 +3,7 @@
 Программа распознает 6 типов автомобилей на видео, производит подсчет каждого из них, а также
 подсчет общего числа атомобилей на данной кадре и заносит все резльтаты в .json файл
 '''
+import base64
 from typing import OrderedDict
 
 # RUN THE CODE:
@@ -23,6 +24,7 @@ from DetectionRectangle import DetectionRectangle
 from VehicleType import VehicleType
 
 from dotenv import load_dotenv
+import struct
 
 load_dotenv()
 
@@ -31,23 +33,25 @@ load_dotenv()
 class CarCounter:
 
     def __init__(self, yolo: str, net_input_dir: str, output_dir: str, skip_frames: int,
-                 detection_rectangles: list[DetectionRectangle], confidence_lower_bound=0.90):
+                 detection_rectangles: list[DetectionRectangle], video: str, confidence_lower_bound=0.90):
         self.yolo = yolo
         self.net_input = net_input_dir
         self.output = output_dir
         self.skip_frames = skip_frames
         self.detection_rectangles = detection_rectangles
         self.confidence_lower_bound = confidence_lower_bound
+        self.video = video
         self.lower_relevance_margin = 100
         self.upper_relevance_margin = 100
         self.left_relevance_margin = 100
         self.right_relevance_margin = 100
+        self.video_path = 'video_path'
 
     def draw_detection_areas(self, detection_frame, detection_areas: list[DetectionRectangle]):
         for detection_area in detection_areas:
             cv2.rectangle(detection_frame,
-                          (detection_area.detection_lower_left[0], detection_area.detection_lower_left[1]),
-                          (detection_area.detection_upper_right[0], detection_area.detection_upper_right[1]),
+                          (detection_area.lowerLeft.first, detection_area.lowerLeft.second),
+                          (detection_area.upperRight.first, detection_area.upperRight.second),
                           (0, 0, 255), 4)
 
     def is_overlapping(self, rectangles, new_rectangle):
@@ -66,7 +70,11 @@ class CarCounter:
         for vehicle_id, vehicle_centroid in vehicles.items():
             for detection_rectangle in detection_rectangles:
                 if self.is_point_inside_rectangle(vehicle_centroid,
-                                                  detection_rectangle.detection_lower_left + detection_rectangle.detection_upper_right):
+                                                  [detection_rectangle.lowerLeft.first,
+                                                   detection_rectangle.lowerLeft.second,
+                                                   detection_rectangle.upperRight.first,
+                                                   detection_rectangle.upperRight.second]):
+
                     if vehicle_type == VehicleType.CAR:
                         detection_rectangle.detected_car_ids.add(vehicle_id)
                     elif vehicle_type == VehicleType.BUS:
@@ -101,28 +109,32 @@ class CarCounter:
     def create_detections_rectangle_dict(self, detection_rectangles: list[DetectionRectangle]) -> dict[
         int, DetectionRectangle]:
         detection_rectangles_dict = {}
-        for detection_rectangle in detection_rectangles:
-            detection_rectangles_dict[detection_rectangle.rectangle_id] = detection_rectangle
+        for idx, detection_rectangle in enumerate(detection_rectangles):
+            detection_rectangles_dict[idx] = detection_rectangle
         return detection_rectangles_dict
 
-    def get_relevant_video_boundary(self):
+    def get_relevant_video_boundary(self, frame):
         if len(self.detection_rectangles) == 0:
             raise Exception("CR should have at least one detection rectangle")
 
-        lower_left_boundary_corner = [self.detection_rectangles[0].detection_lower_left[0],
-                                      self.detection_rectangles[0].detection_lower_left[1]]
-        upper_right_boundary_corner = [self.detection_rectangles[0].detection_upper_right[0],
-                                       self.detection_rectangles[0].detection_upper_right[1]]
+        for detection_rectangle in self.detection_rectangles:
+            detection_rectangle.lowerLeft.second = frame.shape[0] - detection_rectangle.lowerLeft.second
+            detection_rectangle.upperRight.second = frame.shape[0] - detection_rectangle.upperRight.second
+
+        lower_left_boundary_corner = [self.detection_rectangles[0].lowerLeft.first,
+                                      self.detection_rectangles[0].lowerLeft.second]
+        upper_right_boundary_corner = [self.detection_rectangles[0].upperRight.first,
+                                       self.detection_rectangles[0].upperRight.second]
 
         for detection_rectangle in self.detection_rectangles:
-            lower_left_boundary_corner[0] = min(detection_rectangle.detection_lower_left[0],
+            lower_left_boundary_corner[0] = min(detection_rectangle.lowerLeft.first,
                                                 lower_left_boundary_corner[0])
-            lower_left_boundary_corner[1] = min(detection_rectangle.detection_lower_left[1],
+            lower_left_boundary_corner[1] = min(detection_rectangle.lowerLeft.second,
                                                 lower_left_boundary_corner[1])
 
-            upper_right_boundary_corner[0] = max(detection_rectangle.detection_upper_right[0],
+            upper_right_boundary_corner[0] = max(detection_rectangle.upperRight.first,
                                                  upper_right_boundary_corner[0])
-            upper_right_boundary_corner[1] = max(detection_rectangle.detection_upper_right[1],
+            upper_right_boundary_corner[1] = max(detection_rectangle.upperRight.second,
                                                  upper_right_boundary_corner[1])
 
         lower_left_boundary_corner[0] = max(0, lower_left_boundary_corner[0] - self.lower_relevance_margin)
@@ -135,11 +147,19 @@ class CarCounter:
 
     def shift_detection_rectangles(self, lower_left_corner: list[int, int]):
         for detection_rectangle in self.detection_rectangles:
-            detection_rectangle.detection_lower_left[0] -= lower_left_corner[0]
-            detection_rectangle.detection_lower_left[1] -= lower_left_corner[1]
+            detection_rectangle.lowerLeft.first -= lower_left_corner[0]
+            detection_rectangle.lowerLeft.second -= lower_left_corner[1]
 
-            detection_rectangle.detection_upper_right[0] -= lower_left_corner[0]
-            detection_rectangle.detection_upper_right[1] -= lower_left_corner[1]
+            detection_rectangle.upperRight.first -= lower_left_corner[0]
+            detection_rectangle.upperRight.second -= lower_left_corner[1]
+
+    def save_video(self):
+        video_path = os.getenv(self.video_path) + self.net_input
+        if os.path.isfile(video_path):
+            os.remove(video_path)
+
+        with open(video_path, "wb") as out_file:  # open for [w]riting as [b]inary
+            out_file.write(base64.b64decode(self.video))
 
     def run(self):
 
@@ -153,7 +173,7 @@ class CarCounter:
         # Размеры входного изображения
         inpWidth = 608
         inpHeight = 608
-
+        self.save_video()
         vs = cv2.VideoCapture(os.getenv('video_path') + self.net_input)
 
         # объявляем инструмент для записи конечного видео в файл, указываем путь
@@ -238,7 +258,7 @@ class CarCounter:
             "bycicles": str(count_bicycles),
         }
 
-        lower_left_corner, upper_right_corner = self.get_relevant_video_boundary()
+        lower_left_corner, upper_right_corner = self.get_relevant_video_boundary(vs.read()[1])
         self.shift_detection_rectangles(lower_left_corner)
 
         detection_rectangles_dict = self.create_detections_rectangle_dict(self.detection_rectangles)
@@ -431,6 +451,7 @@ class CarCounter:
 
             # Данные для вывода на экран
             info = [
+
                        ("cars in line {}: ".format(i + 1), len(detection_rectangles_dict[i].detected_car_ids)) for i in
                        range(len(self.detection_rectangles))
                    ] + [("buses in line {}: ".format(i + 1), len(detection_rectangles_dict[i].detected_bus_ids)) for i
@@ -490,9 +511,10 @@ class CarCounter:
         # закрываем все окна
         cv2.destroyAllWindows()
 
-        info = dict([("cars in line {}".format(i + 1), len(detection_rectangles_dict[i].detected_car_ids)) for i in
-                     range(len(self.detection_rectangles))] + \
-                    [("buses in line {}".format(i + 1), len(detection_rectangles_dict[i].detected_bus_ids)) for i in
-                     range(len(self.detection_rectangles))])
+        info = []
+        for i in range(len(self.detection_rectangles)):
+            info.append(dict(id=i, detectedCars=len(detection_rectangles_dict[i].detected_car_ids),
+                             detectedBuses=len(detection_rectangles_dict[i].detected_bus_ids),
+                             connectionId=detection_rectangles_dict[i].connectionId))
 
         return str(info)
