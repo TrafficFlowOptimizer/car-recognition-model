@@ -1,5 +1,4 @@
 '''
-<<<<<<< HEAD
 Программа распознает 6 типов автомобилей на видео, производит подсчет каждого из них, а также
 подсчет общего числа атомобилей на данной кадре и заносит все резльтаты в .json файл
 '''
@@ -33,7 +32,7 @@ load_dotenv()
 class CarCounter:
 
     def __init__(self, yolo: str, net_input_dir: str, output_dir: str, skip_frames: int,
-                 detection_rectangles: list[DetectionRectangle], video: str, confidence_lower_bound=0.90):
+                 detection_rectangles: list[DetectionRectangle], video: str, confidence_lower_bound=0.90, DEBUG=False):
         self.yolo = yolo
         self.net_input = net_input_dir
         self.output = output_dir
@@ -46,6 +45,7 @@ class CarCounter:
         self.left_relevance_margin = 100
         self.right_relevance_margin = 100
         self.video_path = 'video_path'
+        self.DEBUG = DEBUG
 
     def draw_detection_areas(self, detection_frame, detection_areas: list[DetectionRectangle]):
         for detection_area in detection_areas:
@@ -488,20 +488,22 @@ class CarCounter:
             if writer is not None:
                 writer.write(frame)
 
-            # показываем конечный кадр в отдельном окне
-            cv2.imshow("Frame", frame)
-            key = cv2.waitKey(1) & 0xFF
+            if self.DEBUG:
+                # показываем конечный кадр в отдельном окне
+                cv2.imshow("Frame", frame)
+                key = cv2.waitKey(1) & 0xFF
 
-            # для прекращения работы необходимо нажать клавишу "q"
-            if key == ord("q"):
-                break
+                # для прекращения работы необходимо нажать клавишу "q"
+                if key == ord("q"):
+                    break
 
             # т.к. все выше-обработка одного кадра, то теперь необходимо увеличить количесвто кадров
             # и обновить счетчик
             totalFrames += 1
 
-        # график выводится на экран в конце работы программы
-        plt.show()
+        if self.DEBUG:
+            # график выводится на экран в конце работы программы        
+            plt.show()
 
         # записываю все полученные данные в json файл
 

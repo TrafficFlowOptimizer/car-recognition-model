@@ -7,25 +7,24 @@ from sys import argv
 import glob
 
 from AnalysisRequest import AnalysisRequest
-from src.DetectionRectangle import DetectionRectangle
-from src.car_counter_yolov3_COCO_6_classes import CarCounter
+from DetectionRectangle import DetectionRectangle
+from car_counter_yolov3_COCO_6_classes import CarCounter
 
 app = FastAPI()
 
-# SERVER = os.getenv('SPRING_HOST')
-
-if len(argv) == 1:
-    SERVER = "http://localhost:8080/"
-    VIDEOS_DIRECTORY = "vids"
-else:  # Server.py runs on docker
-    SERVER = "http://host.docker.internal:8080/"
-    VIDEOS_DIRECTORY = "../vids"
-
 load_dotenv("../.env")
-VIDEOS = os.getenv('VIDEOS')
-OPTIMIZATIONS = os.getenv('OPTIMIZATIONS')
-PORT = int(os.getenv('PORT'))
 
+# run in debug mode
+DEBUG = bool(os.getenv('DEBUG'))
+
+# server info
+SERVER_HOST = os.getenv('SPRING_HOST')
+SERVER_PORT = os.getenv('SPRING_PORT')
+SERVER = "http://" + SERVER_HOST + ":" + SERVER_PORT + "/"
+
+# CR setup
+VIDEOS_DIRECTORY = "videos/"
+PORT = int(os.getenv('CR_PORT'))
 
 def parse_detection_rectangles(detection_rectangles_string) -> list[DetectionRectangle]:
     detection_rectangles_parsed_json = json.loads(detection_rectangles_string)
@@ -51,9 +50,9 @@ def home(): return "Hello world!"
 def analysis_request(
         analysis_request: AnalysisRequest) -> str:
 
-    car_counter = CarCounter("yolo", VIDEOS + analysis_request.id + '.' + analysis_request.extension,
+    car_counter = CarCounter("yolo", VIDEOS_DIRECTORY + analysis_request.id + '.' + analysis_request.extension,
                              "output", int(analysis_request.skip_frames),
-                             analysis_request.detection_rectangles, analysis_request.video)
+                             analysis_request.detection_rectangles, analysis_request.video, DEBUG)
 
     count_cars = car_counter.run()
 

@@ -5,8 +5,11 @@ services:
       context: .
       dockerfile: Dockerfile
     environment:
-      - SPRING_HOST=java-spring-server
-      - SPRIN_PORT=8080
+      - SPRING_HOST=localhost
+      # - SPRING_HOST=java-spring-server
+      - SPRING_PORT=8080
+      - DEBUG=False
+      - CR_PORT=8081
     networks:
       - tfo-net
     ports:
