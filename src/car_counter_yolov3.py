@@ -18,6 +18,8 @@ import cv2
 import os
 from matplotlib import pyplot as plt
 
+DEBUG = False
+
 # парсер аргументов с командной строки
 ap = argparse.ArgumentParser()
 ap.add_argument("-y", "--yolo", required = True, type=str,
@@ -288,23 +290,24 @@ while True:
 		writer.write(frame)
 
 
+	if DEBUG:
+		# показываем конечный кадр в отдельном окне
+		cv2.imshow("Frame", frame)
+		key = cv2.waitKey(1) & 0xFF
 
-	# показываем конечный кадр в отдельном окне
-	cv2.imshow("Frame", frame)
-	key = cv2.waitKey(1) & 0xFF
-
-	# для прекращения работы необходимо нажать клавишу "q"
-	if key == ord("q"):
-		print("[INFO] process finished by user")
-		print("Total number of cars on the video is ", total)
-		break
+		# для прекращения работы необходимо нажать клавишу "q"
+		if key == ord("q"):
+			print("[INFO] process finished by user")
+			print("Total number of cars on the video is ", total)
+			break
 
 	# т.к. все выше-обработка одного кадра, то теперь необходимо увеличить количесвто кадров
 	# и обновить счетчик
 	totalFrames += 1
 
-# график выводится на экран в конце работы программы
-plt.show()
+if DEBUG:
+	# график выводится на экран в конце работы программы
+	plt.show()
 
 # освобождаем память под переменную
 if writer is not None:

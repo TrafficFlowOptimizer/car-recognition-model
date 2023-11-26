@@ -11,25 +11,27 @@ import glob
 from starlette.responses import JSONResponse
 
 from AnalysisRequest import AnalysisRequest
-from src.DetectionRectangle import DetectionRectangle
-from src.car_counter_yolov3_COCO_6_classes import CarCounter
+from DetectionRectangle import DetectionRectangle
+from car_counter_yolov3_COCO_6_classes import CarCounter
 
 app = FastAPI()
 
-if len(argv) == 1:
-    SERVER = "http://localhost:8080/"
-    VIDEOS_DIRECTORY = "vids"
-else:  # Server.py runs on docker
-    SERVER = "http://host.docker.internal:8080/"
-    VIDEOS_DIRECTORY = "../vids"
-
 load_dotenv("../.env")
-VIDEOS = os.getenv('VIDEOS')
-OPTIMIZATIONS = os.getenv('OPTIMIZATIONS')
-PORT = int(os.getenv('PORT'))
+
+# run in debug mode
+DEBUG = bool(os.getenv('DEBUG'))
+
+# server info
+SERVER_HOST = os.getenv('SPRING_HOST')
+SERVER_PORT = os.getenv('SPRING_PORT')
+SERVER = "http://" + SERVER_HOST + ":" + SERVER_PORT + "/"
+
 PASSWORD = os.getenv('PASSWORD')
 PASSWORD_CODE = 'password'
 
+# CR setup
+VIDEOS_DIRECTORY = "videos/"
+PORT = int(os.getenv('CR_PORT'))
 
 def parse_detection_rectangles(detection_rectangles_string) -> list[DetectionRectangle]:
     detection_rectangles_parsed_json = json.loads(detection_rectangles_string)
@@ -46,17 +48,15 @@ async def delete_video(name): os.remove(name)
 async def clear_videos():
     for f in glob.glob(VIDEOS_DIRECTORY): os.remove(f)
 
-allowed_sources = [("127.0.0.1", 8080)]
 
-
-async def check_allowed_source(request: Request):
+async def check_password(request: Request):
     if (request.query_params.get(PASSWORD_CODE) != PASSWORD):
         raise HTTPException(status_code=403, detail="Forbidden: Source not allowed")
 
 @app.middleware("http")
 async def validate_source(request: Request, call_next):
     try:
-        await check_allowed_source(request)
+        await check_password(request)
     except HTTPException as e:
         return JSONResponse(status_code=e.status_code, content={"error": e.detail})
     response = await call_next(request)
@@ -70,9 +70,9 @@ def home(): return "Hello world!"
 def analysis_request(
         analysis_request: AnalysisRequest) -> str:
 
-    car_counter = CarCounter("yolo", VIDEOS + analysis_request.id + '.' + analysis_request.extension,
+    car_counter = CarCounter("yolo", VIDEOS_DIRECTORY + analysis_request.id + '.' + analysis_request.extension,
                              "output", int(analysis_request.skip_frames),
-                             analysis_request.detection_rectangles, analysis_request.video)
+                             analysis_request.detection_rectangles, analysis_request.video, DEBUG)
 
     count_cars = car_counter.run()
 

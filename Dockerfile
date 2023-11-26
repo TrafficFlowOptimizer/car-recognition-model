@@ -1,10 +1,12 @@
 FROM python:3.9
 
-COPY . .
+RUN apt-get update
+RUN apt-get install ffmpeg libsm6 libxext6  -y
 
-WORKDIR /src
-
+COPY requirements.txt requirements.txt
 RUN pip install --no-cache-dir --upgrade -r requirements.txt
 
-# CMD ["uvicorn", "Server:app", "--host", "0.0.0.0", "--port", "8081"]
-CMD ["python", "-u", "Server.py", "docker"]
+COPY src src
+WORKDIR /src
+
+CMD ["python", "-u", "Server.py"]
