@@ -24,7 +24,6 @@ from DetectionRectangle import DetectionRectangle
 from VehicleType import VehicleType
 
 from dotenv import load_dotenv
-import struct
 
 load_dotenv()
 
