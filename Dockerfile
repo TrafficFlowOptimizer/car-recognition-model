@@ -7,6 +7,7 @@ COPY requirements.txt requirements.txt
 RUN pip install --no-cache-dir --upgrade -r requirements.txt
 
 COPY src src
+COPY output output
 WORKDIR /src
 
 CMD ["python", "-u", "Server.py"]

@@ -33,6 +33,7 @@ PASSWORD_CODE = 'password'
 VIDEOS_DIRECTORY = "videos/"
 PORT = int(os.getenv('CR_PORT'))
 
+
 def parse_detection_rectangles(detection_rectangles_string) -> list[DetectionRectangle]:
     detection_rectangles_parsed_json = json.loads(detection_rectangles_string)
     detection_rectangles = []
@@ -72,7 +73,7 @@ def analysis_request(
 
     car_counter = CarCounter("yolo", VIDEOS_DIRECTORY + analysis_request.id + '.' + analysis_request.extension,
                              "output", int(analysis_request.skip_frames),
-                             analysis_request.detection_rectangles, analysis_request.video, DEBUG)
+                             analysis_request.detection_rectangles, analysis_request.video)
 
     count_cars = car_counter.run()
 
