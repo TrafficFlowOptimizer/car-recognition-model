@@ -31,7 +31,7 @@ load_dotenv()
 class CarCounter:
 
     def __init__(self, yolo: str, net_input_dir: str, output_dir: str, skip_frames: int,
-                 detection_rectangles: list[DetectionRectangle], video: str, confidence_lower_bound=0.90, DEBUG=False):
+                 detection_rectangles: list[DetectionRectangle], video: str, confidence_lower_bound=0.90, DEBUG=True):
         self.yolo = yolo
         self.net_input = net_input_dir
         self.output = output_dir
@@ -61,7 +61,7 @@ class CarCounter:
         return False
 
     def is_point_inside_rectangle(self, point, rectangle):
-        return rectangle[0] < point[0] < rectangle[2] and rectangle[1] < point[1] < rectangle[3]
+        return rectangle[0] < point[0] < rectangle[2] and rectangle[1] > point[1] > rectangle[3]
 
     # Функция считает общее количество объектов класса, появившихся на видео
     def count_objects(self, vehicles: OrderedDict, detection_rectangles: list[DetectionRectangle],
@@ -257,8 +257,8 @@ class CarCounter:
             "bycicles": str(count_bicycles),
         }
 
-        lower_left_corner, upper_right_corner = self.get_relevant_video_boundary(vs.read()[1])
-        self.shift_detection_rectangles(lower_left_corner)
+        # lower_left_corner, upper_right_corner = self.get_relevant_video_boundary(vs.read()[1])
+        # self.shift_detection_rectangles(lower_left_corner)
 
         detection_rectangles_dict = self.create_detections_rectangle_dict(self.detection_rectangles)
 
@@ -274,7 +274,7 @@ class CarCounter:
 
             # изменим размер кадра для ускорения работы
             frame = imutils.resize(frame)
-            frame = frame[lower_left_corner[1]: upper_right_corner[1], lower_left_corner[0]: upper_right_corner[0], :]
+            # frame = frame[lower_left_corner[1]: upper_right_corner[1], lower_left_corner[0]: upper_right_corner[0], :]
 
             self.draw_detection_areas(frame, self.detection_rectangles)
 
