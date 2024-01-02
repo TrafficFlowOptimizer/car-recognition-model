@@ -31,7 +31,7 @@ load_dotenv()
 class CarCounter:
 
     def __init__(self, yolo: str, net_input_dir: str, output_dir: str, skip_frames: int,
-                 detection_rectangles: list[DetectionRectangle], video: str, confidence_lower_bound=0.90, DEBUG=True):
+                 detection_rectangles: list[DetectionRectangle], video: str, confidence_lower_bound=0.90, DEBUG=False):
         self.yolo = yolo
         self.net_input = net_input_dir
         self.output = output_dir
