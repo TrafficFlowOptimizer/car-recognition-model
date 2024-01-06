@@ -1,13 +1,11 @@
+import glob
 import json
+import os
 
+import uvicorn
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
 from fastapi import Request
-import uvicorn
-import os
-from sys import argv
-import glob
-
 from starlette.responses import JSONResponse
 
 from AnalysisRequest import AnalysisRequest
@@ -54,6 +52,7 @@ async def check_password(request: Request):
     if (request.query_params.get(PASSWORD_CODE) != PASSWORD):
         raise HTTPException(status_code=403, detail="Forbidden: Source not allowed")
 
+
 @app.middleware("http")
 async def validate_source(request: Request, call_next):
     try:
@@ -63,6 +62,7 @@ async def validate_source(request: Request, call_next):
     response = await call_next(request)
     return response
 
+
 @app.get("/")
 def home(): return "Hello world!"
 
@@ -70,7 +70,6 @@ def home(): return "Hello world!"
 @app.post("/analysis")
 def analysis_request(
         analysis_request: AnalysisRequest) -> str:
-
     car_counter = CarCounter("yolo", VIDEOS_DIRECTORY + analysis_request.id + '.' + analysis_request.extension,
                              "output", int(analysis_request.skip_frames),
                              analysis_request.detection_rectangles, analysis_request.video)

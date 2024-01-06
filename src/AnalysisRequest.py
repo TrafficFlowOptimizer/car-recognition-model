@@ -1,6 +1,8 @@
 from typing import List
-from DetectionRectangle import DetectionRectangle
+
 from pydantic import BaseModel
+
+from DetectionRectangle import DetectionRectangle
 
 
 class AnalysisRequest(BaseModel):

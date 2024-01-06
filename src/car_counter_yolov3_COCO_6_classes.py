@@ -1,20 +1,19 @@
 import base64
+import json
+import os
 from typing import OrderedDict
 
-from pyimagesearch.centroidtracker import CentroidTracker
-from pyimagesearch.trackableobject import TrackableObject
-import numpy as np
-import imutils
-import dlib
-import json
 import cv2
-import os
+import dlib
+import imutils
+import numpy as np
+from dotenv import load_dotenv
 from matplotlib import pyplot as plt
 
 from DetectionRectangle import DetectionRectangle
 from VehicleType import VehicleType
-
-from dotenv import load_dotenv
+from pyimagesearch.centroidtracker import CentroidTracker
+from pyimagesearch.trackableobject import TrackableObject
 
 load_dotenv()
 
